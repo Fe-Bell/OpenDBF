@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Art/Logo.svg">
+</p>
+
 # OpenDBF
 The Open Database Framework is free and open source database library based on object serialization to file.
 
