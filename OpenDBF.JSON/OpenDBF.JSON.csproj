@@ -31,10 +31,6 @@ OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or h
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\OpenDBF.Shared\OpenDBF.Shared.csproj" />
   </ItemGroup>
 
