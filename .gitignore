@@ -3,3 +3,9 @@
 ################################################################################
 
 /.vs/OpenDBF/v16
+/bin
+/OpenDBF.JSON/obj
+/OpenDBF.Core/obj
+/OpenDBF.Shared/obj
+/OpenDBF.UnitTests/obj
+/OpenDBF.XML/obj
