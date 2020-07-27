@@ -21,7 +21,7 @@ namespace OpenDBF.UnitTests
         {
             try
             {
-                //Initializes ReflectXMLDB database handling class.
+                //Initializes the database framework.
                 var dh = FrameworkFactory.GetFramework(FrameworkFactory.Framework_e.XML);
 
                 //Creates the workspace.
@@ -72,7 +72,7 @@ namespace OpenDBF.UnitTests
         {
             try
             {
-                //Initializes ReflectXMLDB database handling class.
+                //Initializes the database framework.
                 var dh = FrameworkFactory.GetFramework(FrameworkFactory.Framework_e.JSON);
 
                 //Creates the workspace.

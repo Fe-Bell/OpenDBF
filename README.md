@@ -13,7 +13,7 @@ OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or h
 - Provides support both XML and JSON formats.
 - Work with friendly files that can be read by any regular text editor.
 - Use simple methods to write/read data to the database files. Forget complex query actions and focus on your actual code.
-- It is completely open source and under the very permissive [MIT License](https://github.com/Fe-Bell/ReflectXMLDB/blob/master/LICENSE).!
+- It is completely open source and under the very permissive [MIT License](https://github.com/Fe-Bell/OpenDBF/blob/master/LICENSE).!
 
 More to come!
 
@@ -30,7 +30,7 @@ There are two steps to get OpenDBF running.
 Example:
 ```csharp
 
-	//Initializes ReflectXMLDB database handling class.
+	//Initializes the database framework.
 	var dh = FrameworkFactory.GetFramework(FrameworkFactory.Framework_e.JSON);
 
 	//Creates the workspace.
@@ -85,4 +85,4 @@ Where Sample is:
 Happy coding!
 
 # License
-Licensed under [MIT License](https://github.com/Fe-Bell/ReflectXMLDB/blob/master/LICENSE).
+Licensed under [MIT License](https://github.com/Fe-Bell/OpenDBF/blob/master/LICENSE).
