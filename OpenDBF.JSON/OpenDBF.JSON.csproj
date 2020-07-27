@@ -18,6 +18,8 @@ OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or h
     <PackageProjectUrl>https://github.com/Fe-Bell/OpenDBF</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Fe-Bell/OpenDBF</RepositoryUrl>
     <PackageIcon>Icon.png</PackageIcon>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

@@ -19,6 +19,7 @@ which is compatible with .NET Core 2.0+, .NET Framework 4.6.1+ and .NET 5.0+.
 OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or higher.</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>Icon.png</PackageIcon>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

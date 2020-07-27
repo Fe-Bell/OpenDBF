@@ -10,6 +10,8 @@
     <Authors>Felipe Bellini</Authors>
     <PackageProjectUrl>https://github.com/Fe-Bell/OpenDBF</PackageProjectUrl>
     <PackageIcon>Icon.png</PackageIcon>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
