@@ -9,3 +9,8 @@
 /OpenDBF.Shared/obj
 /OpenDBF.UnitTests/obj
 /OpenDBF.XML/obj
+/OpenDBF.Core/bin
+/OpenDBF.UnitTests/bin
+/OpenDBF.XML/bin
+/OpenDBF.Shared/bin
+/OpenDBF.JSON/bin

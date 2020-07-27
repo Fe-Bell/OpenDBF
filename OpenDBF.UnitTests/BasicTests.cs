@@ -47,15 +47,15 @@ namespace OpenDBF.UnitTests
                 //Removes some of the items in the database.
                 dh.Remove<Sample>(querySomeSamples);
 
+                //Saves the database
+                dh.Commit();
+
                 //Exports the database to a .db file.
                 dh.ExportDatabase(Path.Combine(Directory.GetCurrentDirectory(), @"Place"), "copyOfSampleDatabase1");
 
                 //Deletes the database
                 dh.DeleteDatabase();
-
-                //Saves the database
-                dh.Commit();
-
+                            
                 //Deletes the workspace and clears the internal resources.
                 dh.ClearHandler();
                 Directory.Delete(workspace, true);
@@ -98,14 +98,14 @@ namespace OpenDBF.UnitTests
                 //Removes some of the items in the database.
                 dh.Remove<Sample>(querySomeSamples);
 
+                //Saves the database
+                dh.Commit();
+
                 //Exports the database to a .db file.
                 dh.ExportDatabase(Path.Combine(Directory.GetCurrentDirectory(), @"Place"), "copyOfSampleDatabase1");
 
                 //Deletes the database
                 dh.DeleteDatabase();
-
-                //Saves the database
-                dh.Commit();
 
                 //Deletes the workspace and clears the internal resources.
                 dh.ClearHandler();
