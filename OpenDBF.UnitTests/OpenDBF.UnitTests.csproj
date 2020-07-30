@@ -8,6 +8,10 @@
     <SignAssembly>true</SignAssembly>
 
     <AssemblyOriginatorKeyFile>OpenDBF.UnitTests.Key.snk</AssemblyOriginatorKeyFile>
+
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
