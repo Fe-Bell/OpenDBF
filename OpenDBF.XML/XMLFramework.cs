@@ -40,7 +40,7 @@ namespace OpenDBF.XML
         /// </summary>
         protected static Mutex mutex = null;
 
-        private XDocument currentXMLDatabase = null;
+        private XDocument database = null;
 
         #endregion
 
@@ -145,7 +145,7 @@ namespace OpenDBF.XML
         /// </summary>
         public XMLFramework()
         {
-            currentXMLDatabase = XMLDatatable.GetObject().Serialize();
+            database = XMLDatatable.GetObject().Serialize();
 
             //Xamarin does not currently support mutexes for some mobile platforms.
             //When a new Mutex instance is created by Xamarin.Forms, a NotSupportedException/NotImplementedException is thrown.
@@ -403,7 +403,7 @@ namespace OpenDBF.XML
             //Creates a new collection inside the current XML      
             var _collectionName = GetCollectionName<T>();
 
-            if(currentXMLDatabase is null)
+            if(database is null)
             {
                 throw new NullReferenceException("The current database is null or not initialized.");
             }
@@ -415,7 +415,7 @@ namespace OpenDBF.XML
             element.Add(new XAttribute(XNamespace.Xmlns + "xsi", XMLSCHEMAINSTANCE_ATB));
             element.Add(new XAttribute(XNamespace.Xmlns + "xsd", XMLSCHEMA_ATB));
 
-            currentXMLDatabase.Root.Add(element);          
+            database.Root.Add(element);          
         }
         /// <summary>
         /// Checks if a collection exists in the database.
@@ -424,7 +424,7 @@ namespace OpenDBF.XML
         /// <returns></returns>
         private bool CollectionExists(string collectionName)
         {
-            if(currentXMLDatabase is null)
+            if(database is null)
             {
                 return false;
             }
@@ -434,7 +434,7 @@ namespace OpenDBF.XML
                 throw new NullReferenceException("CollectionName cannot be empty.");
             }
 
-            return currentXMLDatabase.Root.Elements().Any(x => x.Name == collectionName);
+            return database.Root.Elements().Any(x => x.Name == collectionName);
         }
         /// <summary>
         /// Returns a name for an internal XML collection.
@@ -461,7 +461,7 @@ namespace OpenDBF.XML
         /// <returns></returns>
         private XElement GetCollection(string collectionName)
         {
-            return currentXMLDatabase.Root.Elements().FirstOrDefault(x => x.Name == collectionName);
+            return database.Root.Elements().FirstOrDefault(x => x.Name == collectionName);
         }
         /// <summary>
         /// Gets a the next available ID in a collection of collectables.
@@ -471,7 +471,7 @@ namespace OpenDBF.XML
         /// <returns></returns>
         private uint GetNextID<T>(uint startID = 0) where T : ICollectableObject
         {
-            if (currentXMLDatabase is null)
+            if (database is null)
             {
                 throw new NullReferenceException("Could not load database file.");
             }
@@ -551,29 +551,17 @@ namespace OpenDBF.XML
         /// <summary>
         /// Clears the current database handler. This causes the all internal properties to be null and the workspace to be deleted.
         /// </summary>
-        public void ClearHandler()
+        public void Dispose()
         {
             StopMonitoringDirectory();
-
-            //Checks if the current workspace is still exists
-            if (Directory.Exists(CurrentWorkspace))
-            {
-                //Fixes GitHub issue #4
-                //Will delete all files matching a database class name
-                var filesWithDBName = Directory.GetFiles(CurrentWorkspace, CurrentFileName + ".*", SearchOption.TopDirectoryOnly);
-                if (filesWithDBName.Any())
-                {
-                    //Deletes XML files associated with the current database
-                    filesWithDBName.ForEach(f => File.Delete(f));
-                }
-            }
-
+                      
             //Clear XDocument
-            currentXMLDatabase = XMLDatatable.GetObject().Serialize();
+            database = XMLDatatable.GetObject().Serialize();
 
             //Clears internal data
             CurrentWorkspace = null;
             lastFileChanged = null;
+            CurrentFileName = string.Empty;
 
             //Disengage events
             if (!OnDatabaseChanged.IsNull())
@@ -593,47 +581,19 @@ namespace OpenDBF.XML
         /// Deletes a database file from the computer.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public void DeleteDatabase()
+        public bool DropTable<T>() where T : ICollectableObject
         {
-            string path = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-
-            if (File.Exists(path))
+            if(database != null)
             {
-                lock(lockObject)
+                var _collectionName = GetCollectionName<T>();
+                if (CollectionExists(_collectionName))
                 {
-                    try
-                    {
-                        try
-                        {
-                            if (!mutex.IsNull())
-                            {
-                                mutex.WaitOne();
-                            }
-
-                            File.Delete(path);
-                        }
-                        catch
-                        {
-                            throw;
-                        }
-                        finally
-                        {
-                            if (!mutex.IsNull())
-                            {
-                                mutex.ReleaseMutex();
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        throw;
-                    }
-                    finally
-                    {
-                       
-                    }
+                    GetCollection(_collectionName).Remove();
+                    return !CollectionExists(_collectionName);
                 }
             }
+
+            return false;
         }       
        
         /// <summary>
@@ -671,7 +631,7 @@ namespace OpenDBF.XML
                             mutex.WaitOne();
                         }
 
-                        currentXMLDatabase.Save(filePath);
+                        database.Save(filePath);
 
                         //Will fire the database changed event when the FileSystemWatcher is unavailable.
                         //This should happen only when using Xamarin.Forms as there is no native support for that class.
@@ -730,12 +690,12 @@ namespace OpenDBF.XML
             var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
             if (File.Exists(fullFilePath))
             {                
-                currentXMLDatabase = XDocument.Load(fullFilePath);
+                database = XDocument.Load(fullFilePath);
             }
             else
             {
                 //Create random instance of the database
-                currentXMLDatabase = XMLDatatable.GetObject().Serialize();
+                database = XMLDatatable.GetObject().Serialize();
             }
 
             //Stop monitoring the current workspace
@@ -755,7 +715,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <param name="fileToImport"></param>
         /// <param name="exportPath"></param>
-        public void ImportDatabase(string fileToImport, string exportPath)
+        public void Unpack(string fileToImport, string exportPath)
         {
             //This stores the path where the file should be unzipped to,
             //including any subfolders that the file was originally in.
@@ -832,7 +792,7 @@ namespace OpenDBF.XML
         /// <param name="pathToSave">A folder where the database file will be created.</param>
         /// <param name="filename">A name for the database file.</param>
         /// <param name="fileExtension">An extension for the file.</param>
-        public void ExportDatabase(string pathToSave, string filename, string fileExtension = ".db")
+        public void Pack(string pathToSave, string filename, string fileExtension = ".db")
         {
             //Checks if the path to save ends with a slash and if not, adds it.
             if (!pathToSave.Last().Equals('\\'))

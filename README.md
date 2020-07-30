@@ -27,9 +27,21 @@ Download OpenDBF from our [nuget](https://www.nuget.org/packages/OpenDBF.Core/) 
 OpenDBF offers the traditional Get, Insert, Remove and Update item(s) capabilities commonly present in other database frameworks. Also, it provides a more low level interface with the database files generated, such as the ability to Export and Import the database files to .db files, which are compressed versions of the workspace.
 The framework creates a single file for each database initialized and/or instantiated.
 
-There are two steps to get OpenDBF running.
-1. Custom objects must inherit from OpenDBF.Shared.Interface.ICollectableObject so they can be inserted in the databse.
-2. Users must create an instance of an IDatabaseFramework. The OpenDBF.Core offers a factory for that, but frameworks can be manually instantiated too.
+There are two steps to get OpenDBF running:
+1. Custom objects must inherit from OpenDBF.Shared.Interface.ICollectableObject and be serializable so they can be inserted in the databse.
+
+Example:
+```csharp
+	[Serializable]
+	public class Sample : ICollectableObject
+	{
+		public string GUID { get; set; }
+		public uint EID { get; set; }
+		public string SomeData { get; set; }
+	}	
+```
+
+2. Users must create an instance of an IDatabaseFramework. The OpenDBF.Core offers a factory for that although frameworks can be manually instantiated too.
 
 Example:
 ```csharp
@@ -38,7 +50,7 @@ Example:
 	var dh = FrameworkFactory.GetFramework(FrameworkFactory.Framework_e.JSON);
 
 	//Creates the workspace.
-	string workspace = Path.Combine(Directory.GetCurrentDirectory(), @"DBJSONSample");
+	string workspace = Path.Combine(Directory.GetCurrentDirectory(), @"DBSample");
 	dh.SetWorkspace(workspace);
 
 	//Creates a list of objects to be inserted.
@@ -60,29 +72,18 @@ Example:
 	//Removes some of the items in the database.
 	dh.Remove<Sample>(querySomeSamples);
 
-	//Saves the database
+	//Saves the database to a file
 	dh.Commit();
 
 	//Exports the database to a .db file.
-	dh.ExportDatabase(Path.Combine(Directory.GetCurrentDirectory(), @"Place"), "copyOfSampleDatabase1");
+	dh.Pack(Path.Combine(Directory.GetCurrentDirectory(), @"Place"), "copyOfSampleDatabase1");
 
-	//Deletes the database
-	dh.DeleteDatabase();
+	//Removes all "samples" from the database
+	dh.DropTable<Sample>();
 
-	//Deletes the workspace and clears the internal resources.
-	dh.ClearHandler();
+	//Clears internal resources.
+	dh.Dispose();
 	
-```
-
-Where Sample is:
-```csharp
-	[Serializable]
-    public class Sample : ICollectableObject
-    {
-        public string GUID { get; set; }
-        public uint EID { get; set; }
-        public string SomeData { get; set; }
-    }	
 ```
 
 Happy coding!
