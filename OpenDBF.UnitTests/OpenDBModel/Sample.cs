@@ -1,8 +1,10 @@
 ﻿using OpenDBF.Shared.Interface;
+using System;
 using System.Xml.Serialization;
 
 namespace OpenDBF.UnitTests.Models
 {
+    [Serializable]
     public class Sample : ICollectableObject
     {
         [XmlAttribute]

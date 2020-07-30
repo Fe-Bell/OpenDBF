@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenDBF.Shared", "OpenDBF.S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenDBF.XML", "OpenDBF.XML\OpenDBF.XML.csproj", "{DC48F262-5DB5-4C6A-BFC7-AFAA8CEB27FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenDBF.UnitTests", "OpenDBF.UnitTests\OpenDBF.UnitTests.csproj", "{361C4A88-E70A-44A1-9914-26CD60BFCBD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenDBF.UnitTests", "OpenDBF.UnitTests\OpenDBF.UnitTests.csproj", "{361C4A88-E70A-44A1-9914-26CD60BFCBD0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenDBF.DAT", "OpenDBF.DAT\OpenDBF.DAT.csproj", "{2C0B2DD4-1082-4BD2-AA50-8A9E22BB4D31}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{361C4A88-E70A-44A1-9914-26CD60BFCBD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{361C4A88-E70A-44A1-9914-26CD60BFCBD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{361C4A88-E70A-44A1-9914-26CD60BFCBD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C0B2DD4-1082-4BD2-AA50-8A9E22BB4D31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C0B2DD4-1082-4BD2-AA50-8A9E22BB4D31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C0B2DD4-1082-4BD2-AA50-8A9E22BB4D31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C0B2DD4-1082-4BD2-AA50-8A9E22BB4D31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

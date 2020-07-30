@@ -12,6 +12,16 @@
     <PackageIcon>Icon.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Description>The Open Database Framework is free and open source database library based on object serialization to file.
+
+OpendDBF is a child project of [ReflectXMLDB](https://github.com/Fe-Bell/ReflectXMLDB/).
+
+The project was written with [.NET Standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard), 
+which is compatible with .NET Core 2.0+, .NET Framework 4.6.1+ and .NET 5.0+.
+
+OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or higher.
+
+OpenDBF.XML is database module that supports data serialization to XML.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

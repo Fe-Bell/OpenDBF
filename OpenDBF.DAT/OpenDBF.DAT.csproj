@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>OpenDBF.JSON.Key.snk</AssemblyOriginatorKeyFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Felipe Bellini</Authors>
     <Description>The Open Database Framework is free and open source database library based on object serialization to file.
 
@@ -14,21 +14,21 @@ which is compatible with .NET Core 2.0+, .NET Framework 4.6.1+ and .NET 5.0+.
 
 OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or higher.
 
-OpenDBF.JSON is database module that supports data serialization to JSON.</Description>
+OpenDBF.DAT is database module that supports data serialization to bytes.</Description>
     <Copyright>Copyright (c) 2020 Felipe Bellini</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/Fe-Bell/OpenDBF</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Fe-Bell/OpenDBF</RepositoryUrl>
     <PackageIcon>Icon.png</PackageIcon>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>..\bin\$(Configuration)\</OutputPath>
+    <RepositoryUrl>https://github.com/Fe-Bell/OpenDBF</RepositoryUrl>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>OpenDBF.DAT.Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <OutputPath>..\bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
 

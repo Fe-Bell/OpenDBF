@@ -14,7 +14,7 @@ OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or h
 
 # Features
 - OpenDBF is thread and process safe.
-- Provides support both XML and JSON formats.
+- Provides support for XML, JSON and DAT formats.
 - Work with friendly files that can be read by any regular text editor.
 - Use simple methods to write/read data to the database files. Forget complex query actions and focus on your actual code.
 - It is completely open source and under the very permissive [MIT License](https://github.com/Fe-Bell/OpenDBF/blob/master/LICENSE).!
@@ -24,7 +24,7 @@ More to come!
 # Get started
 Download OpenDBF from our [nuget](https://www.nuget.org/packages/OpenDBF.Core/) links.
 
-OpenDB offers the traditional Get, Insert, Remove and Update item(s) capabilities commonly present in other database frameworks. Also, it provides a more low level interface with the database files generated, such as the ability to Export and Import the database files to .db files, which are compressed versions of the workspace.
+OpenDBF offers the traditional Get, Insert, Remove and Update item(s) capabilities commonly present in other database frameworks. Also, it provides a more low level interface with the database files generated, such as the ability to Export and Import the database files to .db files, which are compressed versions of the workspace.
 The framework creates a single file for each database initialized and/or instantiated.
 
 There are two steps to get OpenDBF running.
@@ -76,14 +76,13 @@ Example:
 
 Where Sample is:
 ```csharp
-
+	[Serializable]
     public class Sample : ICollectableObject
     {
         public string GUID { get; set; }
         public uint EID { get; set; }
         public string SomeData { get; set; }
-    }
-	
+    }	
 ```
 
 Happy coding!
