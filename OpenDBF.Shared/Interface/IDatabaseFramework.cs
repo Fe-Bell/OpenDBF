@@ -4,19 +4,31 @@ using System.Text;
 
 namespace OpenDBF.Shared.Interface
 {
-    public interface IDatabaseFramework
+    public interface IDatabaseFramework : IDisposable
     {
-        void ClearHandler();
+        /// <summary>
+        /// Returns the current filename of the database with extension.
+        /// </summary>
+        string CurrentFileNameWithExtension { get; }
+        /// <summary>
+        /// Returns the current filename of the database.
+        /// </summary>
+        string CurrentFileName { get; }
+        /// <summary>
+        /// Returns the current workspace of the database.
+        /// </summary>
+        string CurrentWorkspace { get; }
+
         void Commit();
-        void DeleteDatabase();
-        void ExportDatabase(string pathToSave, string filename, string fileExtension = ".db");
-        IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject;      
-        void ImportDatabase(string fileToImport, string exportPath);     
+        bool DropTable<T>() where T : ICollectableObject;       
+        IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject;               
         void Insert<T>(IEnumerable<T> items) where T : ICollectableObject, new();
         void Insert<T>(params T[] items) where T : ICollectableObject, new();
+        void Pack(string pathToSave, string filename, string fileExtension = ".db");
         void Remove<T>(IEnumerable<T> items) where T : ICollectableObject, new();
         void Remove<T>(params T[] items) where T : ICollectableObject, new();        
         void SetWorkspace(string workspace, string databaseName = null);
+        void Unpack(string fileToImport, string exportPath);
         void Update<T>(IEnumerable<T> items) where T : ICollectableObject, new();
     }
 }

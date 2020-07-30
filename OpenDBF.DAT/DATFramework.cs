@@ -21,7 +21,7 @@ namespace OpenDBF.DAT
         /// <summary>
         /// An active instance of the database.
         /// </summary>
-        private DATDatatable datatable;
+        private DATDatatable database;
         /// <summary>
         /// Object used for cross-thread protection.
         /// </summary>
@@ -131,7 +131,7 @@ namespace OpenDBF.DAT
 
         public DATFramework()
         {
-            datatable = DATDatatable.Generate();
+            database = DATDatatable.Generate();
 
             //Xamarin does not currently support mutexes for some mobile platforms.
             //When a new Mutex instance is created by Xamarin.Forms, a NotSupportedException/NotImplementedException is thrown.
@@ -160,7 +160,7 @@ namespace OpenDBF.DAT
         private uint GetNextID<T>(uint startID = 0) where T : ICollectableObject
         {
             //Gets all elements in the collection
-            var _collection = datatable.GetCollection<T>();
+            var _collection = database.GetCollection<T>();
 
             if (_collection != null && _collection.Any())
             {
@@ -181,7 +181,7 @@ namespace OpenDBF.DAT
             string newGUID = Guid.NewGuid().ToString().ToUpper();
 
             //Gets all elements in the collection
-            var _collection = datatable.Collections.FirstOrDefault(x => x is IEnumerable<T>);
+            var _collection = database.Collections.FirstOrDefault(x => x is IEnumerable<T>);
 
             if (_collection is null || !(_collection as IEnumerable<T>).Any())
             {
@@ -205,30 +205,18 @@ namespace OpenDBF.DAT
         #region Public methods
 
         /// <summary>
-        /// Clears the current database handler. This causes the all internal properties to be null and the workspace to be deleted.
+        /// Clears the current database framework.
         /// </summary>
-        public void ClearHandler()
+        public void Dispose()
         {
             //StopMonitoringDirectory();
 
-            //Checks if the current workspace is still exists
-            if (Directory.Exists(CurrentWorkspace))
-            {
-                //Fixes GitHub issue #4
-                //Will delete all files matching a database class name
-                var filesWithDBName = Directory.GetFiles(CurrentWorkspace, CurrentFileName + ".*", SearchOption.TopDirectoryOnly);
-                if (filesWithDBName.Any())
-                {
-                    //Deletes XML files associated with the current database
-                    filesWithDBName.ForEach(f => File.Delete(f));
-                }
-            }
-
             //Reset datatable
-            datatable = DATDatatable.Generate();
+            database = DATDatatable.Generate();
 
             //Clears internal data
-            CurrentWorkspace = null;
+            CurrentWorkspace = string.Empty;
+            CurrentFileName = string.Empty;
 
             //Disengage events
             if (!OnDatabaseChanged.IsNull())
@@ -251,9 +239,9 @@ namespace OpenDBF.DAT
         /// <param name="items"></param>
         public void Commit()
         {
-            if (datatable != null)
+            if (database != null)
             {
-                var _dat = datatable.Serialize();
+                var _dat = database.Serialize();
                 if (_dat != null)
                 {
                     if (!Directory.Exists(CurrentWorkspace))
@@ -267,50 +255,18 @@ namespace OpenDBF.DAT
             }
         }
         /// <summary>
-        /// Deletes a database file from the computer.
+        /// Deletes a table of items from the current datatable.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public void DeleteDatabase()
+        /// <typeparam name="T">An ICollectableObject</typeparam>
+        /// <returns>Items deleted (true) or not (false)</returns>
+        public bool DropTable<T>() where T : ICollectableObject
         {
-            string path = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-
-            if (File.Exists(path))
+            if(database != null)
             {
-                lock (lockObject)
-                {
-                    try
-                    {
-                        try
-                        {
-                            if (mutex != null)
-                            {
-                                mutex.WaitOne();
-                            }
-
-                            File.Delete(path);
-                        }
-                        catch
-                        {
-                            throw;
-                        }
-                        finally
-                        {
-                            if (mutex != null)
-                            {
-                                mutex.ReleaseMutex();
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        throw;
-                    }
-                    finally
-                    {
-
-                    }
-                }
+                return database.Collections.RemoveAll(lst => lst.Any(x => x is T)) != 0;
             }
+
+            return false;
         }
         /// <summary>
         ///  Exports a group of database files to a single zipped file.
@@ -318,7 +274,7 @@ namespace OpenDBF.DAT
         /// <param name="pathToSave">A folder where the database file will be created.</param>
         /// <param name="filename">A name for the database file.</param>
         /// <param name="fileExtension">An extension for the file.</param>
-        public void ExportDatabase(string pathToSave, string filename, string fileExtension = ".db")
+        public void Pack(string pathToSave, string filename, string fileExtension = ".db")
         {
             //Checks if the path to save ends with a slash and if not, adds it.
             if (!pathToSave.Last().Equals('\\'))
@@ -418,14 +374,14 @@ namespace OpenDBF.DAT
         /// <returns></returns>
         public IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject
         {
-            return datatable.GetCollection(predicate);
+            return database.GetCollection(predicate);
         }
         /// <summary>
         /// Imports a zipped database file.
         /// </summary>
         /// <param name="fileToImport"></param>
         /// <param name="exportPath"></param>
-        public void ImportDatabase(string fileToImport, string exportPath)
+        public void Unpack(string fileToImport, string exportPath)
         {
             //This stores the path where the file should be unzipped to,
             //including any subfolders that the file was originally in.
@@ -522,7 +478,7 @@ namespace OpenDBF.DAT
                 item.EID = GetNextID<T>();
                 item.GUID = GetNextGUID<T>();
 
-                datatable.Add(item);
+                database.Add(item);
             }
         }
         /// <summary>
@@ -548,7 +504,7 @@ namespace OpenDBF.DAT
 
             foreach (var item in items)
             {
-                datatable.Remove(item);
+                database.Remove(item);
             }
         }
         /// <summary>
@@ -580,16 +536,16 @@ namespace OpenDBF.DAT
             if (File.Exists(fullFilePath))
             {
                 var _dat = File.ReadAllBytes(fullFilePath);
-                datatable = _dat.Deserialize<DATDatatable>();
+                database = _dat.Deserialize<DATDatatable>();
             }
             else
             {
                 //Create random instance of the database
-                datatable = DATDatatable.Generate();
-                if (datatable != null)
+                database = DATDatatable.Generate();
+                if (database != null)
                 {
                     //OpenDBF.DAT.Generic.ExtensionMethods.Serialize(datatable);
-                    var _dat = datatable.Serialize();
+                    var _dat = database.Serialize();
                     if (_dat != null)
                     {
                         if (!Directory.Exists(CurrentWorkspace))
