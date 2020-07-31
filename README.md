@@ -2,6 +2,8 @@
   <img src="Art/Logo.svg">
 </p>
 
+![.NET Core](https://github.com/Fe-Bell/OpenDBF/workflows/.NET%20Core/badge.svg)
+
 # OpenDBF
 The Open Database Framework is free and open source database library based on object serialization to file.
 
