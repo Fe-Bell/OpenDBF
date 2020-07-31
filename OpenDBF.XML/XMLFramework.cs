@@ -24,14 +24,6 @@ namespace OpenDBF.XML
         const string COLLECTION_STR = "Collection";
 
         /// <summary>
-        /// Watches the database's current folder.
-        /// </summary>
-        private FileSystemWatcher fileSystemWatcher = null;
-        /// <summary>
-        /// Stores the name of the last modifiled file in the database folder.
-        /// </summary>
-        private string lastFileChanged = string.Empty;
-        /// <summary>
         /// Object used for cross-thread protection.
         /// </summary>
         private static readonly object lockObject = new object();
@@ -39,7 +31,9 @@ namespace OpenDBF.XML
         /// Mutex to protect file access from multiple processes.
         /// </summary>
         protected static Mutex mutex = null;
-
+        /// <summary>
+        /// Current instance of the XML database.
+        /// </summary>
         private XDocument database = null;
 
         #endregion
@@ -58,85 +52,6 @@ namespace OpenDBF.XML
         /// Returns the current workspace of the database.
         /// </summary>
         public string CurrentWorkspace { get; protected set; }
-
-        #endregion
-
-        #region Public events
-
-        /// <summary>
-        /// Event fired when there is a change in one of the database files.
-        /// </summary>
-        public event OnDatabaseChangedEventHandler OnDatabaseChanged = null;
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseChanged event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseChangedEventHandler(object sender, OnDatabaseChangedEventArgs e);
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseChanged event.
-        /// </summary>
-        public class OnDatabaseChangedEventArgs : EventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseChangedEventArgs(string databaseName, DateTime time)
-            {
-                DatabaseName = databaseName;
-                Time = time;
-            }
-        }
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseImported event.
-        /// </summary>
-        public class OnDatabaseImportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseImportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseImported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseImportedEventHandler(object sender, OnDatabaseImportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database import is completed.
-        /// </summary>
-        public OnDatabaseImportedEventHandler OnDatabaseImported = null;
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseExported event.
-        /// </summary>
-        public class OnDatabaseExportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseExportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseExported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseExportedEventHandler(object sender, OnDatabaseExportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database export is completed.
-        /// </summary>
-        public OnDatabaseExportedEventHandler OnDatabaseExported = null;
 
         #endregion
 
@@ -164,236 +79,7 @@ namespace OpenDBF.XML
         }
 
         #region Private methods
-
-        /// <summary>
-        /// Handles file changed events.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
-        {
-            if (!lastFileChanged.Equals(e.Name))
-            {
-                string fileName = e.Name;
-
-                if (fileName.Contains(".xml"))
-                {
-                    fileName = fileName.Replace(".xml", "");
-
-                    if (fileName.Contains("Database"))
-                    {
-                        OnDatabaseChanged?.Invoke(this, new OnDatabaseChangedEventArgs(fileName, DateTime.Now));
-                    }
-                }
-
-                lastFileChanged = e.Name;
-            }
-            else
-            {
-                lastFileChanged = string.Empty;
-            }
-
-            Console.WriteLine("Changed " + e.FullPath);
-        }
-        /// <summary>
-        /// Handles file created events.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
-        {
-            Console.WriteLine("Created " + e.FullPath);
-        }
-        /// <summary>
-        /// Handles file deleted events.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
-        {
-            Console.WriteLine("Deleted " + e.FullPath);
-        }
-        /// <summary>
-        /// Handles file renamed events.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
-        {
-            Console.WriteLine("Renamed " + e.FullPath);
-        }
-        /// <summary>
-        /// Gets the database path of a database.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private string GetDatabasePath(Type type)
-        {
-            FieldInfo dbPathField = GetType().GetField("paths", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (!dbPathField.IsNull())
-            {
-                var paths = dbPathField.GetValue(this);
-                return (paths as IEnumerable<string>).FirstOrDefault(path => path.Contains(type.Name));
-            }
-            else
-            {
-                throw new Exception("Could not find any paths.");
-            }
-        }
-        /// <summary>
-        /// Monitors a specified directory. This creates a filewatcher.
-        /// </summary>
-        /// <param name="path"></param>
-        private void StartMonitoringDirectory(string path)
-        {
-            //Xamarin does not currently support a unified FileSystemWatcher for mobile platforms.
-            //When a new FileSystemWatcher instance is created by Xamarin.Forms, a NotSupportedException/NotImplementedException is thrown.
-            //The following code handles this exception. The FileSystemWatcher will be ignored because it is null.
-            try
-            {
-                fileSystemWatcher = new FileSystemWatcher
-                {
-                    Path = path
-                };
-                fileSystemWatcher.Changed += FileSystemWatcher_Changed;
-                fileSystemWatcher.Created += FileSystemWatcher_Created;
-                fileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
-                fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
-
-                fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                fileSystemWatcher.EnableRaisingEvents = true;
-            }
-            catch(Exception ex)
-            {
-                if(ex is NotSupportedException || ex is NotImplementedException)
-                {
-                    Console.WriteLine("FileWatcher disabled.");
-                }
-            }
-        }
-        /// <summary>
-        /// Stops monitoring a folder. This disposes the Filewatcher and its events.
-        /// </summary>
-        private void StopMonitoringDirectory()
-        {
-            if (!fileSystemWatcher.IsNull())
-            {
-                fileSystemWatcher.Changed -= FileSystemWatcher_Changed;
-                fileSystemWatcher.Created -= FileSystemWatcher_Created;
-                fileSystemWatcher.Renamed -= FileSystemWatcher_Renamed;
-                fileSystemWatcher.Deleted -= FileSystemWatcher_Deleted;
-
-                fileSystemWatcher.Dispose();
-                fileSystemWatcher = null;
-            }
-        }
-        /// <summary>
-        /// Gets a database that inherits from IDatabase
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        private T GetDatabase<T>() where T : IDatabase
-        {
-            string path = GetDatabasePath(typeof(T));
-
-            if (!string.IsNullOrEmpty(path))
-            {
-                T database = default(T);
-
-                lock(lockObject)
-                {
-                    try
-                    {
-                        try
-                        {
-                            if(!mutex.IsNull())
-                            {
-                                mutex.WaitOne();
-                            }
-                            
-                            database = path.Deserialize<T>();
-                        }
-                        catch
-                        {
-                            throw;
-                        }
-                        finally
-                        {
-                            if(!mutex.IsNull())
-                            {
-                                mutex.ReleaseMutex();
-                            }                           
-                        }
-                    }
-                    catch
-                    {
-                        throw;
-                    }
-                    finally
-                    {
-
-                    }
-
-                    return database;
-                }
-            }
-            else
-            {
-                return default(T);
-            }
-        }
-        /// <summary>
-        /// Gets a selection of items that inherit from ICollectable object from their database collection.
-        /// If propertyName and propertyValue are null, then returns all items of the selected type T in the database.
-        /// If propertyName and propertyValue are NOT null, then all items matching the query (propertyNames that have propertyValues as their value).
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="propertyName"></param>
-        /// <param name="propertyValue"></param>
-        /// <returns></returns>
-        private ICollection<T> Get<T>(string propertyName = null, object propertyValue = null, bool dummyParameter = false) where T : ICollectableObject
-        {
-            if (string.IsNullOrEmpty(propertyName) && !propertyValue.IsNull())
-            {
-                throw new Exception("If propertyName is null, then propertyValue must also be null.");
-            }
-          
-            bool getAllItems = string.IsNullOrEmpty(propertyName) && propertyValue.IsNull();
-
-            var _collectionName = GetCollectionName<T>();
-
-            var _dbCollection = GetCollectionItems(_collectionName).Select(x => x.Deserialize<T>());
-
-            ICollection<T> items = null;
-
-            if (getAllItems)
-            {
-                items = _dbCollection.ToArray();
-            }
-            else
-            {
-                List<T> col = new List<T>();
-                foreach (var item in _dbCollection)
-                {
-                    var prop = item.GetType().GetProperty(propertyName);
-                    if (!prop.IsNull())
-                    {
-                        var propValue = prop.GetValue(item);
-                        if (!propValue.IsNull())
-                        {
-                            if (prop.GetValue(item).ToString() == (propertyValue ?? "").ToString())
-                            {
-                                col.Add(item);
-                            }
-                        }
-                    }
-                }
-                items = col.Any() ? col : null;
-            }
-
-            //A collection or null should be returned.
-            return items;
-        }
+         
         /// <summary>
         /// Creates a new collection node inside the current database.
         /// </summary>
@@ -528,22 +214,7 @@ namespace OpenDBF.XML
                 }
             }
         }
-        /// <summary>
-        /// Returns a properly enumerated collection of ICollectableObjects.
-        /// </summary>
-        /// <param name="collectableObjects"></param>
-        /// <returns></returns>
-        private ICollection<T> EnumerateCollection<T>(ICollection<T> collectableObjects, uint startIndex = 0) where T : ICollectableObject
-        {
-            collectableObjects.ForEach(iCollectableObject =>
-            {
-                iCollectableObject.EID = startIndex;
-                startIndex++;
-            });
-
-            return collectableObjects;
-        }
-
+     
         #endregion
 
         #region Public methods
@@ -553,28 +224,44 @@ namespace OpenDBF.XML
         /// </summary>
         public void Dispose()
         {
-            StopMonitoringDirectory();
-                      
-            //Clear XDocument
-            database = XMLDatatable.GetObject().Serialize();
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            //Clears internal data
-            CurrentWorkspace = null;
-            lastFileChanged = null;
-            CurrentFileName = string.Empty;
+                        //Clear XDocument
+                        database = XMLDatatable.GetObject().Serialize();
 
-            //Disengage events
-            if (!OnDatabaseChanged.IsNull())
-            {
-                OnDatabaseChanged = null;
-            }
-            if (!OnDatabaseExported.IsNull())
-            {
-                OnDatabaseExported = null;
-            }
-            if (!OnDatabaseImported.IsNull())
-            {
-                OnDatabaseImported = null;
+                        //Clears internal data
+                        CurrentWorkspace = null;
+                        CurrentFileName = string.Empty;
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
         }       
         /// <summary>
@@ -583,42 +270,7 @@ namespace OpenDBF.XML
         /// <typeparam name="T"></typeparam>
         public bool DropTable<T>() where T : ICollectableObject
         {
-            if(database != null)
-            {
-                var _collectionName = GetCollectionName<T>();
-                if (CollectionExists(_collectionName))
-                {
-                    GetCollection(_collectionName).Remove();
-                    return !CollectionExists(_collectionName);
-                }
-            }
-
-            return false;
-        }       
-       
-        /// <summary>
-        /// Gets a selection of items that inherit from ICollectable object from their database collection.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
-        public IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject
-        {
-            var _collectionName = GetCollectionName<T>();
-
-            var _dbCollection = GetCollectionItems(_collectionName).Select(x => x.Deserialize<T>());
-
-            //A collection or null should be returned.
-            return predicate is null ? _dbCollection : _dbCollection.Where(predicate);
-        }
-        /// <summary>
-        /// Saves a selection of items in its respective database.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        public void Commit()
-        {
-            string filePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+            bool rc = false;
 
             lock (lockObject)
             {
@@ -631,14 +283,113 @@ namespace OpenDBF.XML
                             mutex.WaitOne();
                         }
 
-                        database.Save(filePath);
-
-                        //Will fire the database changed event when the FileSystemWatcher is unavailable.
-                        //This should happen only when using Xamarin.Forms as there is no native support for that class.
-                        if(fileSystemWatcher.IsNull())
+                        if (database != null)
                         {
-                            OnDatabaseChanged?.Invoke(this, new OnDatabaseChangedEventArgs(CurrentFileName, DateTime.Now));
+                            var _collectionName = GetCollectionName<T>();
+                            if (CollectionExists(_collectionName))
+                            {
+                                GetCollection(_collectionName).Remove();
+                                rc = !CollectionExists(_collectionName);
+                            }
                         }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }
+          
+            return rc;
+        }       
+       
+        /// <summary>
+        /// Gets a selection of items that inherit from ICollectable object from their database collection.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject
+        {
+            IEnumerable<T> output = null;
+
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        var _collectionName = GetCollectionName<T>();
+
+                        var _dbCollection = GetCollectionItems(_collectionName).Select(x => x.Deserialize<T>());
+
+                        //A collection or null should be returned.
+                        output = predicate is null ? _dbCollection : _dbCollection.Where(predicate);
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }
+
+            return output;           
+        }
+        /// <summary>
+        /// Saves a selection of items in its respective database.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        public void Commit()
+        {
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        string filePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+                        database.Save(filePath);
                     }
                     catch
                     {
@@ -669,46 +420,73 @@ namespace OpenDBF.XML
         /// <param name="databaseTypes"></param>
         public void SetWorkspace(string workspace, string databaseName = null)
         {
-            //Checks parameters
-            //---------------------------------------------------------------------------
-            if (string.IsNullOrEmpty(workspace))
+            lock (lockObject)
             {
-                throw new Exception("Cannot have a null workspace.");
-            }
-            //---------------------------------------------------------------------------
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            //Checks if the workspace path ends with a slash and if not, adds it.
-            if (!workspace.Last().Equals('\\'))
-            {
-                workspace += '\\';
-            }
+                        //Checks parameters
+                        //---------------------------------------------------------------------------
+                        if (string.IsNullOrEmpty(workspace))
+                        {
+                            throw new Exception("Cannot have a null workspace.");
+                        }
+                        //---------------------------------------------------------------------------
 
-            //Saves the database tyoes and the workspace in the current instance.
-            CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
-            CurrentWorkspace = workspace;
+                        //Checks if the workspace path ends with a slash and if not, adds it.
+                        if (!workspace.Last().Equals('\\'))
+                        {
+                            workspace += '\\';
+                        }
 
-            var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-            if (File.Exists(fullFilePath))
-            {                
-                database = XDocument.Load(fullFilePath);
-            }
-            else
-            {
-                //Create random instance of the database
-                database = XMLDatatable.GetObject().Serialize();
-            }
+                        //Saves the database tyoes and the workspace in the current instance.
+                        CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
+                        CurrentWorkspace = workspace;
 
-            //Stop monitoring the current workspace
-            StopMonitoringDirectory();
+                        var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+                        if (File.Exists(fullFilePath))
+                        {
+                            database = XDocument.Load(fullFilePath);
+                        }
+                        else
+                        {
+                            //Create random instance of the database
+                            database = XMLDatatable.GetObject().Serialize();
+                        }
 
-            //Creates the workspace folder if it does not exist.
-            if (!Directory.Exists(workspace))
-            {
-                Directory.CreateDirectory(workspace);
-            }
+                        //Creates the workspace folder if it does not exist.
+                        if (!Directory.Exists(workspace))
+                        {
+                            Directory.CreateDirectory(workspace);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
 
-            //Start monitoring the current workspace
-            StartMonitoringDirectory(workspace);
+                }
+            }           
         }
         /// <summary>
         /// Imports a zipped database file.
@@ -717,14 +495,6 @@ namespace OpenDBF.XML
         /// <param name="exportPath"></param>
         public void Unpack(string fileToImport, string exportPath)
         {
-            //This stores the path where the file should be unzipped to,
-            //including any subfolders that the file was originally in.
-            string fileUnzipFullPath = string.Empty;
-
-            //This is the full name of the destination file including
-            //the path
-            string fileUnzipFullName = string.Empty;
-
             lock(lockObject)
             {
                 try
@@ -735,6 +505,14 @@ namespace OpenDBF.XML
                         {
                             mutex.WaitOne();
                         }
+
+                        //This stores the path where the file should be unzipped to,
+                        //including any subfolders that the file was originally in.
+                        string fileUnzipFullPath = string.Empty;
+
+                        //This is the full name of the destination file including
+                        //the path
+                        string fileUnzipFullName = string.Empty;
 
                         //Opens the zip file up to be read
                         using (ZipArchive archive = ZipFile.OpenRead(fileToImport))
@@ -783,8 +561,6 @@ namespace OpenDBF.XML
 
                 }
             }
-
-            OnDatabaseImported?.Invoke(this, new OnDatabaseImportedEventArgs(fileUnzipFullName, DateTime.Now));
         }
         /// <summary>
         ///  Exports a group of database files to a single zipped file.
@@ -794,12 +570,6 @@ namespace OpenDBF.XML
         /// <param name="fileExtension">An extension for the file.</param>
         public void Pack(string pathToSave, string filename, string fileExtension = ".db")
         {
-            //Checks if the path to save ends with a slash and if not, adds it.
-            if (!pathToSave.Last().Equals('\\'))
-            {
-                pathToSave += '\\';
-            }
-
             lock(lockObject)
             {
                 try
@@ -809,6 +579,12 @@ namespace OpenDBF.XML
                         if (!mutex.IsNull())
                         {
                             mutex.WaitOne();
+                        }
+
+                        //Checks if the path to save ends with a slash and if not, adds it.
+                        if (!pathToSave.Last().Equals('\\'))
+                        {
+                            pathToSave += '\\';
                         }
 
                         //Make sure the specified directory exists, else creates it
@@ -853,9 +629,6 @@ namespace OpenDBF.XML
 
                         //4. Delete temp folder
                         Directory.Delete(tempFolder, true);
-
-                        //Fire events.
-                        OnDatabaseExported?.Invoke(this, new OnDatabaseExportedEventArgs(fullFilePath, DateTime.Now));
                     }
                     catch
                     {
@@ -908,27 +681,60 @@ namespace OpenDBF.XML
         /// <param name="items"></param>
         public void Insert<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if(items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to insert.");
-            }
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            var _collectionName = GetCollectionName<T>();
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to insert.");
+                        }
 
-            if (!CollectionExists(_collectionName))
-            {
-                CreateCollection<T>();
-            }
+                        var _collectionName = GetCollectionName<T>();
 
-            var _collection = GetCollection(_collectionName);
-            foreach(var item in items)
-            {
-                item.EID = GetNextID<T>();
-                item.GUID = GetNextGUID<T>();
+                        if (!CollectionExists(_collectionName))
+                        {
+                            CreateCollection<T>();
+                        }
 
-                var serializedItem = item.SerializeToXElement();
-                _collection.Add(serializedItem);
-            }
+                        var _collection = GetCollection(_collectionName);
+                        foreach (var item in items)
+                        {
+                            item.EID = GetNextID<T>();
+                            item.GUID = GetNextGUID<T>();
+
+                            var serializedItem = item.SerializeToXElement();
+                            _collection.Add(serializedItem);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }           
         }
         /// <summary>
         /// Removes a selection of items that inherit from ICollectable object from their database collection.
@@ -946,27 +752,60 @@ namespace OpenDBF.XML
         /// <param name="items"></param>
         public void Remove<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if (items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to remove.");
-            }
-
-            var _collectionName = GetCollectionName<T>();
-
-            if (CollectionExists(_collectionName))
-            {
-                var _itemsToRemove = items.Select(x => x.SerializeToXElement<T>());
-                var _collection = GetCollectionItems(_collectionName);
-
-                foreach (var _xmlItem in _collection)
+                try
                 {
-                    foreach (var _item in _itemsToRemove)
+                    try
                     {
-                        if(_xmlItem.ToString() == _item.ToString())
+                        if (!mutex.IsNull())
                         {
-                            _xmlItem.Remove();
+                            mutex.WaitOne();
+                        }
+
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to remove.");
+                        }
+
+                        var _collectionName = GetCollectionName<T>();
+
+                        if (CollectionExists(_collectionName))
+                        {
+                            var _itemsToRemove = items.Select(x => x.SerializeToXElement<T>());
+                            var _collection = GetCollectionItems(_collectionName);
+
+                            foreach (var _xmlItem in _collection)
+                            {
+                                foreach (var _item in _itemsToRemove)
+                                {
+                                    if (_xmlItem.ToString() == _item.ToString())
+                                    {
+                                        _xmlItem.Remove();
+                                    }
+                                }
+                            }
                         }
                     }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
                 }
             }
         }
