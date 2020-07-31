@@ -33,85 +33,6 @@ namespace OpenDBF.DAT
 
         #endregion
 
-        #region Public events
-
-        /// <summary>
-        /// Event fired when there is a change in one of the database files.
-        /// </summary>
-        public event OnDatabaseChangedEventHandler OnDatabaseChanged = null;
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseChanged event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseChangedEventHandler(object sender, OnDatabaseChangedEventArgs e);
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseChanged event.
-        /// </summary>
-        public class OnDatabaseChangedEventArgs : EventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseChangedEventArgs(string databaseName, DateTime time)
-            {
-                DatabaseName = databaseName;
-                Time = time;
-            }
-        }
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseImported event.
-        /// </summary>
-        public class OnDatabaseImportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseImportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseImported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseImportedEventHandler(object sender, OnDatabaseImportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database import is completed.
-        /// </summary>
-        public OnDatabaseImportedEventHandler OnDatabaseImported = null;
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseExported event.
-        /// </summary>
-        public class OnDatabaseExportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseExportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseExported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseExportedEventHandler(object sender, OnDatabaseExportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database export is completed.
-        /// </summary>
-        public OnDatabaseExportedEventHandler OnDatabaseExported = null;
-
-        #endregion
-
         #region Public properties
 
         /// <summary>
@@ -131,13 +52,12 @@ namespace OpenDBF.DAT
 
         public DATFramework()
         {
-            database = DATDatatable.Generate();
-
             //Xamarin does not currently support mutexes for some mobile platforms.
             //When a new Mutex instance is created by Xamarin.Forms, a NotSupportedException/NotImplementedException is thrown.
             //The following code handles this exception. The mutex will be ignored because it is null.
             try
             {
+                database = DATDatatable.Generate();
                 mutex = new Mutex(false, "OpenDBF.DATMutex");
             }
             catch (Exception ex)
@@ -209,28 +129,45 @@ namespace OpenDBF.DAT
         /// </summary>
         public void Dispose()
         {
-            //StopMonitoringDirectory();
-
-            //Reset datatable
-            database = DATDatatable.Generate();
-
-            //Clears internal data
-            CurrentWorkspace = string.Empty;
-            CurrentFileName = string.Empty;
-
-            //Disengage events
-            if (!OnDatabaseChanged.IsNull())
+            lock (lockObject)
             {
-                OnDatabaseChanged = null;
-            }
-            if (!OnDatabaseExported.IsNull())
-            {
-                OnDatabaseExported = null;
-            }
-            if (!OnDatabaseImported.IsNull())
-            {
-                OnDatabaseImported = null;
-            }
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        //Reset datatable
+                        database = DATDatatable.Generate();
+
+                        //Clears internal data
+                        CurrentWorkspace = string.Empty;
+                        CurrentFileName = string.Empty;
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }          
         }
         /// <summary>
         /// Saves a selection of items in its respective database.
@@ -239,18 +176,51 @@ namespace OpenDBF.DAT
         /// <param name="items"></param>
         public void Commit()
         {
-            if (database != null)
+            lock (lockObject)
             {
-                var _dat = database.Serialize();
-                if (_dat != null)
+                try
                 {
-                    if (!Directory.Exists(CurrentWorkspace))
+                    try
                     {
-                        Directory.CreateDirectory(CurrentWorkspace);
-                    }
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-                    var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-                    File.WriteAllBytes(fullFilePath, _dat);
+                        if (database != null)
+                        {
+                            var _dat = database.Serialize();
+                            if (_dat != null)
+                            {
+                                if (!Directory.Exists(CurrentWorkspace))
+                                {
+                                    Directory.CreateDirectory(CurrentWorkspace);
+                                }
+
+                                var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+                                File.WriteAllBytes(fullFilePath, _dat);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
                 }
             }
         }
@@ -261,12 +231,47 @@ namespace OpenDBF.DAT
         /// <returns>Items deleted (true) or not (false)</returns>
         public bool DropTable<T>() where T : ICollectableObject
         {
-            if(database != null)
+            bool rc = false;
+
+            lock (lockObject)
             {
-                return database.Collections.RemoveAll(lst => lst.Any(x => x is T)) != 0;
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        if (database != null)
+                        {
+                            rc = database.Collections.RemoveAll(lst => lst.Any(x => x is T)) != 0;
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
 
-            return false;
+            return rc;
         }
         /// <summary>
         ///  Exports a group of database files to a single zipped file.
@@ -338,9 +343,6 @@ namespace OpenDBF.DAT
 
                         //4. Delete temp folder
                         Directory.Delete(tempFolder, true);
-
-                        //Fire events.
-                        OnDatabaseExported?.Invoke(this, new OnDatabaseExportedEventArgs(fullFilePath, DateTime.Now));
                     }
                     catch
                     {
@@ -374,7 +376,47 @@ namespace OpenDBF.DAT
         /// <returns></returns>
         public IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject
         {
-            return database.GetCollection(predicate);
+            IEnumerable<T> output = null;
+
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        if (database != null)
+                        {
+                            output = database.GetCollection(predicate);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }
+
+            return output;
         }
         /// <summary>
         /// Imports a zipped database file.
@@ -449,8 +491,6 @@ namespace OpenDBF.DAT
 
                 }
             }
-
-            OnDatabaseImported?.Invoke(this, new OnDatabaseImportedEventArgs(fileUnzipFullName, DateTime.Now));
         }
         /// <summary>
         /// Inserts a collection of items in the active database.
@@ -468,17 +508,50 @@ namespace OpenDBF.DAT
         /// <param name="items"></param>
         public void Insert<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if (items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to insert.");
-            }
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            foreach(var item in items)
-            {
-                item.EID = GetNextID<T>();
-                item.GUID = GetNextGUID<T>();
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to insert.");
+                        }
 
-                database.Add(item);
+                        foreach (var item in items)
+                        {
+                            item.EID = GetNextID<T>();
+                            item.GUID = GetNextGUID<T>();
+
+                            database.Add(item);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
         }
         /// <summary>
@@ -497,14 +570,47 @@ namespace OpenDBF.DAT
         /// <param name="items"></param>
         public void Remove<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if (items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to insert.");
-            }
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            foreach (var item in items)
-            {
-                database.Remove(item);
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to remove.");
+                        }
+
+                        foreach (var item in items)
+                        {
+                            database.Remove(item);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
         }
         /// <summary>
@@ -514,61 +620,88 @@ namespace OpenDBF.DAT
         /// <param name="databaseTypes"></param>
         public void SetWorkspace(string workspace, string databaseName = null)
         {
-            //Checks parameters
-            //---------------------------------------------------------------------------
-            if (string.IsNullOrEmpty(workspace))
+            lock (lockObject)
             {
-                throw new Exception("Cannot have a null workspace.");
-            }
-            //---------------------------------------------------------------------------
-
-            //Checks if the workspace path ends with a slash and if not, adds it.
-            if (!workspace.Last().Equals('\\'))
-            {
-                workspace += '\\';
-            }
-
-            //Saves the database tyoes and the workspace in the current instance.
-            CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
-            CurrentWorkspace = workspace;
-
-            var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-            if (File.Exists(fullFilePath))
-            {
-                var _dat = File.ReadAllBytes(fullFilePath);
-                database = _dat.Deserialize<DATDatatable>();
-            }
-            else
-            {
-                //Create random instance of the database
-                database = DATDatatable.Generate();
-                if (database != null)
+                try
                 {
-                    //OpenDBF.DAT.Generic.ExtensionMethods.Serialize(datatable);
-                    var _dat = database.Serialize();
-                    if (_dat != null)
+                    try
                     {
-                        if (!Directory.Exists(CurrentWorkspace))
+                        if (!mutex.IsNull())
                         {
-                            Directory.CreateDirectory(CurrentWorkspace);
+                            mutex.WaitOne();
                         }
 
-                        File.WriteAllBytes(fullFilePath, _dat);
+                        //Checks parameters
+                        //---------------------------------------------------------------------------
+                        if (string.IsNullOrEmpty(workspace))
+                        {
+                            throw new Exception("Cannot have a null workspace.");
+                        }
+                        //---------------------------------------------------------------------------
+
+                        //Checks if the workspace path ends with a slash and if not, adds it.
+                        if (!workspace.Last().Equals('\\'))
+                        {
+                            workspace += '\\';
+                        }
+
+                        //Saves the database tyoes and the workspace in the current instance.
+                        CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
+                        CurrentWorkspace = workspace;
+
+                        var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+                        if (File.Exists(fullFilePath))
+                        {
+                            var _dat = File.ReadAllBytes(fullFilePath);
+                            database = _dat.Deserialize<DATDatatable>();
+                        }
+                        else
+                        {
+                            //Create random instance of the database
+                            database = DATDatatable.Generate();
+                            if (database != null)
+                            {
+                                //OpenDBF.DAT.Generic.ExtensionMethods.Serialize(datatable);
+                                var _dat = database.Serialize();
+                                if (_dat != null)
+                                {
+                                    if (!Directory.Exists(CurrentWorkspace))
+                                    {
+                                        Directory.CreateDirectory(CurrentWorkspace);
+                                    }
+
+                                    File.WriteAllBytes(fullFilePath, _dat);
+                                }
+                            }
+                        }
+
+                        //Creates the workspace folder if it does not exist.
+                        if (!Directory.Exists(workspace))
+                        {
+                            Directory.CreateDirectory(workspace);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
                     }
                 }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
-
-            //Stop monitoring the current workspace
-            //StopMonitoringDirectory();
-
-            //Creates the workspace folder if it does not exist.
-            if (!Directory.Exists(workspace))
-            {
-                Directory.CreateDirectory(workspace);
-            }
-
-            //Start monitoring the current workspace
-            //StartMonitoringDirectory(workspace);
         }
         /// <summary>
         /// Updates a selection of items in its respective database.

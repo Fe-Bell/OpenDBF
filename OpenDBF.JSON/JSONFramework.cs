@@ -28,85 +28,6 @@ namespace OpenDBF.JSON
 
         #endregion
 
-        #region Public events
-
-        /// <summary>
-        /// Event fired when there is a change in one of the database files.
-        /// </summary>
-        public event OnDatabaseChangedEventHandler OnDatabaseChanged = null;
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseChanged event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseChangedEventHandler(object sender, OnDatabaseChangedEventArgs e);
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseChanged event.
-        /// </summary>
-        public class OnDatabaseChangedEventArgs : EventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseChangedEventArgs(string databaseName, DateTime time)
-            {
-                DatabaseName = databaseName;
-                Time = time;
-            }
-        }
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseImported event.
-        /// </summary>
-        public class OnDatabaseImportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseImportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseImported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseImportedEventHandler(object sender, OnDatabaseImportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database import is completed.
-        /// </summary>
-        public OnDatabaseImportedEventHandler OnDatabaseImported = null;
-
-        /// <summary>
-        /// EventArgs delivered with OnDatabaseExported event.
-        /// </summary>
-        public class OnDatabaseExportedEventArgs
-        {
-            public string DatabaseName { get; private set; }
-            public DateTime Time { get; private set; }
-
-            public OnDatabaseExportedEventArgs(string databaseName, DateTime date)
-            {
-                DatabaseName = databaseName;
-                Time = Time;
-            }
-        }
-        /// <summary>
-        /// Delegate event handler for the OnDatabaseExported event.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void OnDatabaseExportedEventHandler(object sender, OnDatabaseExportedEventArgs e);
-        /// <summary>
-        /// Event fired when a database export is completed.
-        /// </summary>
-        public OnDatabaseExportedEventHandler OnDatabaseExported = null;
-
-        #endregion
-
         #region Public properties
 
         /// <summary>
@@ -207,28 +128,45 @@ namespace OpenDBF.JSON
         /// Clears the current database handler. This causes the all internal properties to be null and the workspace to be deleted.
         /// </summary>
         public void Dispose()
-        {
-            //StopMonitoringDirectory();
-
-            //Reset datatable
-            database = JSONDatatable.Generate();
-
-            //Clears internal data
-            CurrentWorkspace = null;
-            CurrentFileName = string.Empty;
-
-            //Disengage events
-            if (!OnDatabaseChanged.IsNull())
+        {           
+            lock (lockObject)
             {
-                OnDatabaseChanged = null;
-            }
-            if (!OnDatabaseExported.IsNull())
-            {
-                OnDatabaseExported = null;
-            }
-            if (!OnDatabaseImported.IsNull())
-            {
-                OnDatabaseImported = null;
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        //Reset datatable
+                        database = JSONDatatable.Generate();
+
+                        //Clears internal data
+                        CurrentWorkspace = null;
+                        CurrentFileName = string.Empty;
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
         }
         /// <summary>
@@ -238,13 +176,6 @@ namespace OpenDBF.JSON
         /// <param name="items"></param>
         public void Commit()
         {
-            if(database is null)
-            {
-                throw new NullReferenceException("The JSON datatable is null.");
-            }
-
-            string filePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-
             lock (lockObject)
             {
                 try
@@ -256,17 +187,14 @@ namespace OpenDBF.JSON
                             mutex.WaitOne();
                         }
 
+                        if(database is null)
+                        {
+                            throw new NullReferenceException("The JSON datatable is null.");
+                        }
+                        
+                        string filePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
                         var json = database.Serialize();
                         File.WriteAllText(filePath, json);
-
-                        //Will fire the database changed event when the FileSystemWatcher is unavailable.
-                        //This should happen only when using Xamarin.Forms as there is no native support for that class.
-                        //if (fileSystemWatcher.IsNull())
-                        //{
-                        //    OnDatabaseChanged?.Invoke(this, new OnDatabaseChangedEventArgs(CurrentFileName, DateTime.Now));
-                        //}
-
-                        OnDatabaseChanged?.Invoke(this, new OnDatabaseChangedEventArgs(CurrentFileName, DateTime.Now));
                     }
                     catch
                     {
@@ -297,26 +225,7 @@ namespace OpenDBF.JSON
         /// <returns>Items deleted (true) or not (false)</returns>
         public bool DropTable<T>() where T : ICollectableObject
         {
-            if(database != null)
-            {
-                return database.Root.RemoveAll(x => x.DataType == typeof(List<T>).FullName) != 0;
-            }
-
-            return false;
-        }
-        /// <summary>
-        ///  Exports a group of database files to a single zipped file.
-        /// </summary>
-        /// <param name="pathToSave">A folder where the database file will be created.</param>
-        /// <param name="filename">A name for the database file.</param>
-        /// <param name="fileExtension">An extension for the file.</param>
-        public void Pack(string pathToSave, string filename, string fileExtension = ".db")
-        {
-            //Checks if the path to save ends with a slash and if not, adds it.
-            if (!pathToSave.Last().Equals('\\'))
-            {
-                pathToSave += '\\';
-            }
+            bool rc = false;
 
             lock (lockObject)
             {
@@ -327,6 +236,60 @@ namespace OpenDBF.JSON
                         if (!mutex.IsNull())
                         {
                             mutex.WaitOne();
+                        }
+
+                        if (database != null)
+                        {
+                            rc = database.Root.RemoveAll(x => x.DataType == typeof(List<T>).FullName) != 0;
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }
+           
+            return rc;
+        }
+        /// <summary>
+        ///  Exports a group of database files to a single zipped file.
+        /// </summary>
+        /// <param name="pathToSave">A folder where the database file will be created.</param>
+        /// <param name="filename">A name for the database file.</param>
+        /// <param name="fileExtension">An extension for the file.</param>
+        public void Pack(string pathToSave, string filename, string fileExtension = ".db")
+        {
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        //Checks if the path to save ends with a slash and if not, adds it.
+                        if (!pathToSave.Last().Equals('\\'))
+                        {
+                            pathToSave += '\\';
                         }
 
                         //Make sure the specified directory exists, else creates it
@@ -371,9 +334,6 @@ namespace OpenDBF.JSON
 
                         //4. Delete temp folder
                         Directory.Delete(tempFolder, true);
-
-                        //Fire events.
-                        OnDatabaseExported?.Invoke(this, new OnDatabaseExportedEventArgs(fullFilePath, DateTime.Now));
                     }
                     catch
                     {
@@ -407,19 +367,53 @@ namespace OpenDBF.JSON
         /// <returns></returns>
         public IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject
         {
-            List<T> _collection = null;
-            var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == typeof(List<T>).FullName);
-            if (_dataBlob != null)
-            {               
-                _collection = (List<T>)typeof(OpenDBF.JSON.Generic.ExtensionMethods).
-                    GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static)
-                    .MakeGenericMethod(typeof(List<T>)).Invoke(null, new object[] { _dataBlob.Data });
+            IEnumerable <T> output = null;
 
-                //A collection or null should be returned.
-                return predicate is null ? _collection : _collection.Where(predicate);
+            lock (lockObject)
+            {
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
+
+                        var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == typeof(List<T>).FullName);
+                        if (_dataBlob != null)
+                        {
+                            List<T> _collection = (List<T>)typeof(OpenDBF.JSON.Generic.ExtensionMethods).
+                                GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static)
+                                .MakeGenericMethod(typeof(List<T>)).Invoke(null, new object[] { _dataBlob.Data });
+
+                            //A collection or null should be returned.
+                            return predicate is null ? _collection : _collection.Where(predicate);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
             }
 
-            return null;
+            return output;
         }
         /// <summary>
         /// Imports a zipped database file.
@@ -494,8 +488,6 @@ namespace OpenDBF.JSON
 
                 }
             }
-
-            OnDatabaseImported?.Invoke(this, new OnDatabaseImportedEventArgs(fileUnzipFullName, DateTime.Now));
         }
         /// <summary>
         /// Inserts a collection of items in the active database.
@@ -513,31 +505,64 @@ namespace OpenDBF.JSON
         /// <param name="items"></param>
         public void Insert<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if (items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to insert.");
-            }
+                try
+                {
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-            List<T> _collection = null;
-            var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == _collection.GetType().FullName);         
-            if(_dataBlob is null)
-            {
-                _collection = new List<T>();
-                _dataBlob = DataBlob.Generate(_collection.GetType().FullName, _collection.Serialize());
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to insert.");
+                        }
 
-                database.Root.Add(_dataBlob);
-                _dataBlob = database.Root.FirstOrDefault(x => x.DataType == _collection.GetType().FullName);
-            }
+                        List<T> _collection = null;
+                        var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == _collection.GetType().FullName);
+                        if (_dataBlob is null)
+                        {
+                            _collection = new List<T>();
+                            _dataBlob = DataBlob.Generate(_collection.GetType().FullName, _collection.Serialize());
 
-            foreach (var item in items)
-            {
-                item.EID = GetNextID<T>();
-                item.GUID = GetNextGUID<T>();
-                               
-                _collection.Add(item);
-            }
+                            database.Root.Add(_dataBlob);
+                            _dataBlob = database.Root.FirstOrDefault(x => x.DataType == _collection.GetType().FullName);
+                        }
 
-            _dataBlob.Data = _collection.Serialize();
+                        foreach (var item in items)
+                        {
+                            item.EID = GetNextID<T>();
+                            item.GUID = GetNextGUID<T>();
+
+                            _collection.Add(item);
+                        }
+
+                        _dataBlob.Data = _collection.Serialize();
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }           
         }
         /// <summary>
         /// Removes a selection of items that inherit from ICollectable object from their database collection.
@@ -555,26 +580,58 @@ namespace OpenDBF.JSON
         /// <param name="items"></param>
         public void Remove<T>(params T[] items) where T : ICollectableObject, new()
         {
-            if (items is null || !items.Any())
+            lock (lockObject)
             {
-                throw new NullReferenceException("No items to remove.");
-            }
-
-            List<T> _collection = null;
-            var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == typeof(List<T>).FullName);
-            if (_dataBlob != null)
-            {
-                _collection = (List<T>)typeof(OpenDBF.JSON.Generic.ExtensionMethods).
-                      GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static)
-                      .MakeGenericMethod(typeof(List<T>)).Invoke(null, new object[] { _dataBlob.Data });
-
-                foreach (var item in items)
+                try
                 {
-                    _collection.RemoveAll(x => x.GUID == item.GUID);
-                }
+                    try
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.WaitOne();
+                        }
 
-                _dataBlob.Data = _collection.Serialize();
-            }
+                        if (items is null || !items.Any())
+                        {
+                            throw new NullReferenceException("No items to remove.");
+                        }
+
+                        var _dataBlob = database.Root.FirstOrDefault(x => x.DataType == typeof(List<T>).FullName);
+                        if (_dataBlob != null)
+                        {
+                            List<T> _collection = (List<T>)typeof(OpenDBF.JSON.Generic.ExtensionMethods)
+                                                  .GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static)
+                                                  .MakeGenericMethod(typeof(List<T>)).Invoke(null, new object[] { _dataBlob.Data });
+
+                            foreach (var item in items)
+                            {
+                                _collection.RemoveAll(x => x.GUID == item.GUID);
+                            }
+
+                            _dataBlob.Data = _collection.Serialize();
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+
+                }
+            }           
         }
         /// <summary>
         /// Sets the workspace of this class. Type parameters must all inherit from IDatabase.
@@ -583,63 +640,90 @@ namespace OpenDBF.JSON
         /// <param name="databaseTypes"></param>
         public void SetWorkspace(string workspace, string databaseName = null)
         {
-            //Checks parameters
-            //---------------------------------------------------------------------------
-            if (string.IsNullOrEmpty(workspace))
+            lock (lockObject)
             {
-                throw new Exception("Cannot have a null workspace.");
-            }
-            //---------------------------------------------------------------------------
-
-            //Checks if the workspace path ends with a slash and if not, adds it.
-            if (!workspace.Last().Equals('\\'))
-            {
-                workspace += '\\';
-            }
-
-            //Saves the database tyoes and the workspace in the current instance.
-            CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
-            CurrentWorkspace = workspace;
-
-            var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
-            if (File.Exists(fullFilePath))
-            {
-                var _json = File.ReadAllText(fullFilePath);
-                if (!string.IsNullOrEmpty(_json))
+                try
                 {
-                    database = _json.Deserialize<JSONDatatable>();
-                }
-            }
-            else
-            {
-                //Create random instance of the database
-                database = JSONDatatable.Generate();
-                if(database != null)
-                {
-                    var _json = database.Serialize();
-                    if (!string.IsNullOrEmpty(_json))
+                    try
                     {
-                        if(!Directory.Exists(CurrentWorkspace))
+                        if (!mutex.IsNull())
                         {
-                            Directory.CreateDirectory(CurrentWorkspace);
+                            mutex.WaitOne();
                         }
 
-                        File.WriteAllText(fullFilePath, _json);
+                        //Checks parameters
+                        //---------------------------------------------------------------------------
+                        if (string.IsNullOrEmpty(workspace))
+                        {
+                            throw new Exception("Cannot have a null workspace.");
+                        }
+                        //---------------------------------------------------------------------------
+
+                        //Checks if the workspace path ends with a slash and if not, adds it.
+                        if (!workspace.Last().Equals('\\'))
+                        {
+                            workspace += '\\';
+                        }
+
+                        //Saves the database tyoes and the workspace in the current instance.
+                        CurrentFileName = string.IsNullOrEmpty(databaseName) ? StringUtils.RandomString(8) : Path.GetFileNameWithoutExtension(databaseName);
+                        CurrentWorkspace = workspace;
+
+                        var fullFilePath = Path.Combine(CurrentWorkspace, CurrentFileNameWithExtension);
+                        if (File.Exists(fullFilePath))
+                        {
+                            var _json = File.ReadAllText(fullFilePath);
+                            if (!string.IsNullOrEmpty(_json))
+                            {
+                                database = _json.Deserialize<JSONDatatable>();
+                            }
+                        }
+                        else
+                        {
+                            //Create random instance of the database
+                            database = JSONDatatable.Generate();
+                            if (database != null)
+                            {
+                                var _json = database.Serialize();
+                                if (!string.IsNullOrEmpty(_json))
+                                {
+                                    if (!Directory.Exists(CurrentWorkspace))
+                                    {
+                                        Directory.CreateDirectory(CurrentWorkspace);
+                                    }
+
+                                    File.WriteAllText(fullFilePath, _json);
+                                }
+                            }
+                        }
+
+                        //Creates the workspace folder if it does not exist.
+                        if (!Directory.Exists(workspace))
+                        {
+                            Directory.CreateDirectory(workspace);
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        if (!mutex.IsNull())
+                        {
+                            mutex.ReleaseMutex();
+                        }
                     }
                 }
-            }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
 
-            //Stop monitoring the current workspace
-            //StopMonitoringDirectory();
-
-            //Creates the workspace folder if it does not exist.
-            if (!Directory.Exists(workspace))
-            {
-                Directory.CreateDirectory(workspace);
-            }
-
-            //Start monitoring the current workspace
-            //StartMonitoringDirectory(workspace);
+                }
+            }          
         }
         /// <summary>
         /// Updates a selection of items in its respective database.
