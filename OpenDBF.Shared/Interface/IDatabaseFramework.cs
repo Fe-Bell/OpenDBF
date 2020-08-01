@@ -22,13 +22,13 @@ namespace OpenDBF.Shared.Interface
         void Commit();
         bool DropTable<T>() where T : ICollectableObject;       
         IEnumerable<T> Get<T>(Func<T, bool> predicate = null) where T : ICollectableObject;               
-        void Insert<T>(IEnumerable<T> items) where T : ICollectableObject, new();
-        void Insert<T>(params T[] items) where T : ICollectableObject, new();
+        void Insert<T>(IEnumerable<T> items) where T : ICollectableObject;
+        void Insert<T>(params T[] items) where T : ICollectableObject;
         void Pack(string pathToSave, string filename, string fileExtension = ".db");
-        void Remove<T>(IEnumerable<T> items) where T : ICollectableObject, new();
-        void Remove<T>(params T[] items) where T : ICollectableObject, new();        
+        void Remove<T>(IEnumerable<T> items) where T : ICollectableObject;
+        void Remove<T>(params T[] items) where T : ICollectableObject;        
         void SetWorkspace(string workspace, string databaseName = null);
         void Unpack(string fileToImport, string exportPath);
-        void Update<T>(IEnumerable<T> items) where T : ICollectableObject, new();
+        void Update<T>(IEnumerable<T> items) where T : ICollectableObject;
     }
 }

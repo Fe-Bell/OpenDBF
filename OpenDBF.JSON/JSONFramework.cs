@@ -494,7 +494,7 @@ namespace OpenDBF.JSON
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Insert<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Insert<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             Insert(items.ToArray());
         }
@@ -503,7 +503,7 @@ namespace OpenDBF.JSON
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Insert<T>(params T[] items) where T : ICollectableObject, new()
+        public void Insert<T>(params T[] items) where T : ICollectableObject
         {
             lock (lockObject)
             {
@@ -569,7 +569,7 @@ namespace OpenDBF.JSON
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Remove<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Remove<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             Remove(items.ToArray());
         }
@@ -578,7 +578,7 @@ namespace OpenDBF.JSON
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Remove<T>(params T[] items) where T : ICollectableObject, new()
+        public void Remove<T>(params T[] items) where T : ICollectableObject
         {
             lock (lockObject)
             {
@@ -730,7 +730,7 @@ namespace OpenDBF.JSON
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Update<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Update<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             if (items is null || !items.Any())
             {
