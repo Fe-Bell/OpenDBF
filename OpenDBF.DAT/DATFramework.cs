@@ -135,7 +135,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -153,7 +153,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -182,7 +182,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -208,7 +208,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -239,7 +239,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -255,7 +255,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -384,7 +384,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -400,7 +400,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -514,7 +514,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -538,7 +538,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -576,7 +576,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -597,7 +597,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -626,7 +626,7 @@ namespace OpenDBF.DAT
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -687,7 +687,7 @@ namespace OpenDBF.DAT
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
