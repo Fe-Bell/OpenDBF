@@ -1,10 +1,10 @@
-﻿using System;
+﻿using OpenDBF.Shared.Interface;
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenDBF.JSON.Model
 {
-    public class JSONDatatable
+    public class JSONDatatable : IDatabase
     {
         public string GUID { get; set; }
 

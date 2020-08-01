@@ -1,6 +1,4 @@
-﻿using System.Xml.Serialization;
-
-namespace OpenDBF.Shared.Interface
+﻿namespace OpenDBF.Shared.Interface
 {
     /// <summary>
     /// Interface for database objects.
@@ -12,7 +10,6 @@ namespace OpenDBF.Shared.Interface
         /// <summary>
         /// The enumeration ID displays the order of an object in a database.
         /// </summary>
-        [XmlAttribute]
         uint EID { get; set; }      
     }
 }

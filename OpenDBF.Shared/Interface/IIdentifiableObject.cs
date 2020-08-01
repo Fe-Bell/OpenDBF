@@ -1,6 +1,4 @@
-﻿using System.Xml.Serialization;
-
-namespace OpenDBF.Shared.Interface
+﻿namespace OpenDBF.Shared.Interface
 {
     /// <summary>
     /// Interface for database implementations.
@@ -12,7 +10,6 @@ namespace OpenDBF.Shared.Interface
         /// <summary>
         /// The GUID is an internal unique identification of an object.
         /// </summary>
-        [XmlAttribute]
         string GUID { get; set; }
     }
 }
