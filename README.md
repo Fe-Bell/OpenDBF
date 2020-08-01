@@ -5,7 +5,7 @@
 ![.NET Core](https://github.com/Fe-Bell/OpenDBF/workflows/.NET%20Core/badge.svg)
 
 # OpenDBF
-The Open Database Framework is free and open source database library based on object serialization to file.
+The Open Database Framework is a free and open source database library based on object serialization to file.
 
 OpendDBF is a child project of [ReflectXMLDB](https://github.com/Fe-Bell/ReflectXMLDB/).
 
@@ -15,10 +15,10 @@ which is compatible with .NET Core 2.0+, .NET Framework 4.6.1+ and .NET 5.0+.
 OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or higher.
 
 # Features
-- OpenDBF is thread and process safe.
-- Provides support for XML, JSON and DAT formats.
-- Work with friendly files that can be read by any regular text editor.
-- Use simple methods to write/read data to the database files. Forget complex query actions and focus on your actual code.
+- Multithread and process safety.
+- Supports XML, JSON and DAT file formats.
+- Provides high-level methods to read/write data to the database files.
+- Compatible with Linq.
 - It is completely open source and under the very permissive [MIT License](https://github.com/Fe-Bell/OpenDBF/blob/master/LICENSE).!
 
 More to come!
@@ -26,8 +26,8 @@ More to come!
 # Get started
 Download OpenDBF from our [nuget](https://www.nuget.org/packages/OpenDBF.Core/) links.
 
-OpenDBF offers the traditional Get, Insert, Remove and Update item(s) capabilities commonly present in other database frameworks. Also, it provides a more low level interface with the database files generated, such as the ability to Export and Import the database files to .db files, which are compressed versions of the workspace.
-The framework creates a single file for each database initialized and/or instantiated.
+OpenDBF offers the traditional Get, Insert, Remove and Update methods commonly found in other database frameworks. 
+It creates a single file for all database objects and also supports zip compression with the use of Pack/Unpack methods.
 
 There are two steps to get OpenDBF running:
 1. Custom objects must inherit from OpenDBF.Shared.Interface.ICollectableObject and be serializable so they can be inserted in the databse.
@@ -43,7 +43,7 @@ Example:
 	}	
 ```
 
-2. Users must create an instance of an IDatabaseFramework. The OpenDBF.Core offers a factory for that although frameworks can be manually instantiated too.
+2. Users must create an instance of an IDatabaseFramework. OpenDBF.Core offers a FrameworkFactory for that. It is also possible to manually instantiate these frameworks.
 
 Example:
 ```csharp
