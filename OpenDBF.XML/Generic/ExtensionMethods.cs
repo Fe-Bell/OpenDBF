@@ -36,7 +36,7 @@ namespace OpenDBF.XML.Generic
         /// </summary>
         /// <param name="serializableObject"></param>
         /// <returns></returns>
-        public static XDocument Serialize<T>(this T serializableObject, bool useDefaultNamespace = true) where T : new()
+        public static XDocument Serialize<T>(this T serializableObject, bool useDefaultNamespace = true)
         {
             //if (!typeof(T).IsSerializable && !(typeof(System.Runtime.Serialization.ISerializable).IsAssignableFrom(typeof(T))))
             //{
@@ -77,7 +77,7 @@ namespace OpenDBF.XML.Generic
         /// </summary>
         /// <param name="serializableObject"></param>
         /// <returns></returns>
-        public static XElement SerializeToXElement<T>(this T serializableObject, bool useDefaultNamespace = true) where T : new()
+        public static XElement SerializeToXElement<T>(this T serializableObject, bool useDefaultNamespace = true)
         {
             var xml = serializableObject.Serialize(false);
             return xml.Root;

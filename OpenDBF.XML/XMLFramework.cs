@@ -195,10 +195,9 @@ namespace OpenDBF.XML
 
             var _collectionName = GetCollectionName<T>();
 
-            //var _collection = GetCollection(_collectionName);
             var identifiableObjects = GetCollectionItems(_collectionName).Select(x => x.Deserialize<T>());
 
-            if (identifiableObjects.IsNull() || !identifiableObjects.Any())
+            if (identifiableObjects is null || identifiableObjects.Count() == 0)
             {
                 return newGUID;
             }
@@ -230,7 +229,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -248,7 +247,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -278,7 +277,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -299,7 +298,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -334,7 +333,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -352,7 +351,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -383,7 +382,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -397,7 +396,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -426,7 +425,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -472,7 +471,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -501,7 +500,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -546,7 +545,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -576,7 +575,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -637,7 +636,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -659,7 +658,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Update<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Update<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             Remove(items);
             Insert(items);
@@ -670,7 +669,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Insert<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Insert<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             Insert(items.ToArray());
         }
@@ -679,7 +678,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Insert<T>(params T[] items) where T : ICollectableObject, new()
+        public void Insert<T>(params T[] items) where T : ICollectableObject
         {
             lock (lockObject)
             {
@@ -687,7 +686,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -720,7 +719,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }
@@ -741,7 +740,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Remove<T>(IEnumerable<T> items) where T : ICollectableObject, new()
+        public void Remove<T>(IEnumerable<T> items) where T : ICollectableObject
         {
             Remove(items.ToArray());
         }
@@ -750,7 +749,7 @@ namespace OpenDBF.XML
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
-        public void Remove<T>(params T[] items) where T : ICollectableObject, new()
+        public void Remove<T>(params T[] items) where T : ICollectableObject
         {
             lock (lockObject)
             {
@@ -758,7 +757,7 @@ namespace OpenDBF.XML
                 {
                     try
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.WaitOne();
                         }
@@ -793,7 +792,7 @@ namespace OpenDBF.XML
                     }
                     finally
                     {
-                        if (!mutex.IsNull())
+                        if(mutex != null)
                         {
                             mutex.ReleaseMutex();
                         }

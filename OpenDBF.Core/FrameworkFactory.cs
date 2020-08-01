@@ -2,11 +2,12 @@
 using OpenDBF.JSON;
 using OpenDBF.Shared.Interface;
 using OpenDBF.XML;
-using System;
-using System.ComponentModel;
 
 namespace OpenDBF.Core
 {
+    /// <summary>
+    /// Static factory to build database frameworks.
+    /// </summary>
     public static class FrameworkFactory
     {
         /// <summary>
@@ -17,11 +18,6 @@ namespace OpenDBF.Core
             XML,
             JSON,
             DAT
-        }
-
-        static FrameworkFactory()
-        {
-
         }
 
         /// <summary>

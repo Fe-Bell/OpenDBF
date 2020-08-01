@@ -2,13 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
 
 namespace OpenDBF.DAT.Model
 {
     [Serializable]
-    public class DATDatatable
+    public class DATDatatable : IDatabase
     {
         public string GUID { get; set; }
         public List<List<ICollectableObject>> Collections { get; set; }
