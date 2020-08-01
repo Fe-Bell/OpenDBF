@@ -24,7 +24,7 @@ OpenDBF is cross platform and can run in any OS that supports .NET Core 2.0 or h
 More to come!
 
 # Get started
-Download OpenDBF from our [nuget](https://www.nuget.org/packages/OpenDBF.Core/) links.
+Download OpenDBF from [nuget](https://www.nuget.org/packages/OpenDBF.Core/).
 
 OpenDBF offers the traditional Get, Insert, Remove and Update methods commonly found in other database frameworks. 
 It creates a single file for all database objects and also supports zip compression with the use of Pack/Unpack methods.
